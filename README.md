@@ -3,7 +3,7 @@ Initial focus on data science and visualization tools
 
 🏎️ 2026 F1 Command Center — Strategy & Telemetry Dashboard
 
-An interactive, high-performance Formula 1 strategy dashboard built with **Streamlit** and **Python**, designed to analyze driver pace, tyre wear, circuit speed profiles, and race strategy across the **2026 F1 Season** (up to the Bahrain Grand Prix in Malaysia).
+An interactive Formula 1 strategy dashboard built with **Streamlit** and **Python**, designed to analyze driver pace, tyre wear, circuit speed profiles, and race strategy across the **2026 F1 Season** (up to the Bahrain Grand Prix in Malaysia).
 
 The application focuses on an in-depth constructor comparison between **Mercedes** and **Ferrari** ).
 
@@ -27,15 +27,17 @@ The application focuses on an in-depth constructor comparison between **Mercedes
 
  🛠️ Tech Stack & Dependencies
 
-* **Frontend & Framework:** [Streamlit](https://streamlit.io/)
+* **Frontend & Framework:** Streamlit
 * **Data Processing:** `pandas`, `numpy`
 * **Machine Learning & Modeling:** `scikit-learn` (`LinearRegression`)
 * **Data Visualization:** `matplotlib` (Pit-wall dark theme)
 
 
   🚀 Getting Started
+  
 1. Clone & Set Up Workspace
-Bash
+
+Bash:
 cd f1_dashboard
 python -m venv .venv
 Activate Virtual Environment:
@@ -45,8 +47,11 @@ Windows: .venv\Scripts\activate
 Mac/Linux: source .venv/bin/activate
 
 2. Install Dependencies
-Bash
+
+Bash:
 pip install -r requirements.txt
+
 3. Run Application
-Bash
+
+Bash:
 streamlit run app.py
