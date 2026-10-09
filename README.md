@@ -32,6 +32,7 @@ The application focuses on an in-depth constructor comparison between **Mercedes
 * **Machine Learning & Modeling:** `scikit-learn` (`LinearRegression`)
 * **Data Visualization:** `matplotlib` (Pit-wall dark theme)
 
+---
 
   🚀 Getting Started
   
