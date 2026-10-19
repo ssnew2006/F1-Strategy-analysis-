@@ -10,7 +10,7 @@ from sklearn.linear_model import LinearRegression
 # PAGE CONFIGURATION & THEMING
 # ==========================================
 st.set_page_config(
-    page_title="2026 F1 Command Center - Mercedes & Ferrari",
+    page_title="2026 F1 Command Center - Mercedes vs Ferrari",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -161,9 +161,13 @@ tab_overview, tab_car_deepdive = st.tabs(["📊 Race Strategy Overview", "🏎�
 # ==========================================
 # TAB 1: RACE STRATEGY OVERVIEW
 # ==========================================
+
+# ==========================================
+# TAB 1: RACE STRATEGY OVERVIEW
+# ==========================================
 with tab_overview:
     st.header(f"Strategy Overview: {selected_race_name}")
-    st.caption("Pace distribution, tire deacy and the track layout.")
+    st.caption("Pace distribution and tyre degradation linear regression models highlighting strategy crossovers for the top 5 race finishers.")
     
     col1, col2, col3 = st.columns([1.2, 1.3, 1.1])
     
@@ -187,27 +191,63 @@ with tab_overview:
         ax1.grid(True, linestyle=":", alpha=0.3)
         st.pyplot(fig1)
 
-    # 2. Tyre Wear Scatterplot with Linear Regression
+    # 2. TYRE WEAR SCATTERPLOT WITH LINEAR REGRESSION CROSSOVERS (TAB 1 ONLY)
     with col2:
         st.subheader("Tyre Wear Linear Regression")
         fig2, ax2 = plt.subplots(figsize=(4.8, 4.2))
         
-        laps = np.arange(1, 26).reshape(-1, 1)
+        laps = np.arange(1, 23).reshape(-1, 1)  # 21-lap stint window
         colors = ['#E10600', '#00D2BE', '#FF8000', '#3671C6', '#229971']
         
+        # Track-specific pace and degradation variations to ensure crossovers in every race
+        # Driver profiles: [Pace Offset relative to base_time, Degradation Rate (s/lap)]
+        track_deg_profiles = {
+            "Japanese Grand Prix":           {"soft_push": [3], "rates": [-1.8, 0.420, 0.032, 0.048, 0.028]},
+            "Australian Grand Prix":         {"soft_push": [1], "rates": [0.030, -1.2, 0.380, 0.042, 0.025]},
+            "Chinese Grand Prix":            {"soft_push": [2], "rates": [0.035, 0.028, -1.5, 0.390, 0.040]},
+            "Miami Grand Prix":              {"soft_push": [1], "rates": [0.025, -1.4, 0.360, 0.030, 0.045]},
+            "Canadian Grand Prix":           {"soft_push": [3], "rates": [0.038, 0.022, 0.030, -1.6, 0.410]},
+            "Monaco Grand Prix":             {"soft_push": [0], "rates": [-1.0, 0.280, 0.020, 0.025, 0.018]},
+            "Spanish Grand Prix (Barcelona)":{"soft_push": [0], "rates": [-1.7, 0.440, 0.035, 0.040, 0.030]},
+            "Austrian Grand Prix":           {"soft_push": [2], "rates": [0.032, 0.028, -1.3, 0.370, 0.035]},
+            "British Grand Prix":            {"soft_push": [2], "rates": [0.030, 0.035, -1.6, 0.430, 0.028]},
+            "Belgian Grand Prix":            {"soft_push": [1], "rates": [0.040, -1.9, 0.460, 0.032, 0.038]},
+            "Hungarian Grand Prix":          {"soft_push": [4], "rates": [0.028, 0.032, 0.030, 0.035, -1.5]},
+            "Dutch Grand Prix":              {"soft_push": [3], "rates": [0.034, 0.029, 0.038, -1.4, 0.380]},
+            "Italian Grand Prix (Monza)":    {"soft_push": [0], "rates": [-1.5, 0.350, 0.025, 0.030, 0.028]},
+            "Azerbaijan Grand Prix":         {"soft_push": [1], "rates": [0.030, -1.6, 0.400, 0.032, 0.036]},
+            "Bahrain Grand Prix (Malaysia)": {"soft_push": [2], "rates": [0.032, 0.028, -1.8, 0.450, 0.040]}
+        }
+
+        # Get specific track strategy or fallback to standard crossover profile
+        profile = track_deg_profiles.get(selected_race_name, {"soft_push": [2], "rates": [0.03, 0.035, -1.5, 0.40, 0.032]})
+        soft_push_indices = profile["soft_push"]
+        rates = profile["rates"]
+
         for idx, (drv, base_t) in enumerate(zip(top_5_drivers, base_times)):
-            decay_rate = 0.04 + idx * 0.03 + np.random.uniform(0.01, 0.03)
-            noisy_laptimes = base_t + decay_rate * laps.ravel() + np.random.normal(0, 0.25, len(laps))
+            if idx in soft_push_indices:
+                # Driver on aggressive soft stint: Starts faster (-1.5s to -1.9s) but wears out quickly
+                start_pace = base_t + rates[idx]
+                deg_rate = rates[idx + 1] if idx + 1 < len(rates) else 0.400
+            else:
+                # Drivers on durable medium/hard stints: Start steady, maintain flat pace
+                start_pace = base_t + (idx * 0.12)
+                deg_rate = rates[idx] if rates[idx] > 0 else 0.035
+
+            noisy_laptimes = start_pace + deg_rate * laps.ravel() + np.random.normal(0, 0.18, len(laps))
             
+            # Fit Scikit-Learn Linear Regression model
             model = LinearRegression()
             model.fit(laps, noisy_laptimes)
             predicted_laptimes = model.predict(laps)
             
-            ax2.scatter(laps, noisy_laptimes, color=colors[idx], s=14, alpha=0.5)
-            ax2.plot(laps, predicted_laptimes, color=colors[idx], label=f"{drv} ({model.coef_[0]:.3f}s/lap)", linewidth=1.8)
+            slope = model.coef_[0]
+            
+            ax2.scatter(laps, noisy_laptimes, color=colors[idx], s=14, alpha=0.4)
+            ax2.plot(laps, predicted_laptimes, color=colors[idx], label=f"{drv} (+{slope:.3f}s/lap)", linewidth=1.8)
             
         ax2.set_xlabel("Tire Age (Laps)")
-        ax2.set_ylabel("Lap Time (s)")
+        ax2.set_ylabel("Lap Time (Seconds)")
         ax2.legend(loc="upper left", fontsize=7)
         ax2.grid(True, linestyle=":", alpha=0.3)
         st.pyplot(fig2)
@@ -344,11 +384,11 @@ with tab_car_deepdive:
             
             # Plot DNF retirement marker
             if d_key in dnf_dict and d_laps_count > 0:
-                ax_cmp.scatter(d_laps_count, pace_curve[-1], color="red", marker="x", s=50, zorder=5)
-                ax_cmp.text(d_laps_count + 0.5, pace_curve[-1], "DNF", color="red", fontsize=7, fontweight="bold")
+                ax_cmp.scatter(d_laps_count, pace_curve[-1], color="white", marker="x", s=50, zorder=5)
+                ax_cmp.text(d_laps_count + 0.5, pace_curve[-1], "DNF", color="white", fontsize=7, fontweight="bold")
 
         ax_cmp.set_ylabel("Lap Time (s)", fontsize=8)
         ax_cmp.set_xlabel("LAP", fontsize=8)
-        ax_cmp.legend(loc="upper right", fontsize=7)
+        ax_cmp.legend(loc="upper right", fontsize=7, labelcolor="white")
         ax_cmp.grid(True, linestyle=":", alpha=0.3)
         st.pyplot(fig_cmp)
